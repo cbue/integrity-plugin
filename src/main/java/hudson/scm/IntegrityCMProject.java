@@ -287,13 +287,12 @@ public class IntegrityCMProject implements Serializable
 						insert.setString(6, wi.getId());													// ConfigPath
 						
 						String subProjectRev = "";
-						if (wi.contains("memberrev")) {
+						if (wi.contains("memberrev")) 
+						{
 							subProjectRev = wi.getField("memberrev").getItem().getId();
-						}
-						
+						}						
 						insert.setString(7, subProjectRev);													// Revision
 						insert.setString(8, pjDir);															// RelativeFile
-						
 						insert.executeUpdate();
 						
 					}
@@ -314,39 +313,53 @@ public class IntegrityCMProject implements Serializable
 						String parentProject = wi.getField("parent").getValueAsString();				
 						// Save this member entry
 						String memberName = wi.getField("name").getValueAsString();
-						String description = "";
-						// Per JENKINS-19791 some users are getting an exception when attempting 
-						// to read the 'memberdescription' field in the API response. This is an
-						// attempt to catch the exception and ignore it...!
-						try
+						// Figure out the full member path
+						Logger.debug("Member context: " + wi.getContext());
+						Logger.debug("Member parent: " + parentProject);
+						Logger.debug("Member name: " + memberName);
+						
+						// Process this member only if we can figure out where to put it in the workspace
+						if( memberName.startsWith(projectRoot) )
 						{
-							if( null != wi.getField("memberdescription") && null != wi.getField("memberdescription").getValueAsString() )
+							String description = "";
+							// Per JENKINS-19791 some users are getting an exception when attempting 
+							// to read the 'memberdescription' field in the API response. This is an
+							// attempt to catch the exception and ignore it...!
+							try
 							{
-								description = fixDescription(wi.getField("memberdescription").getValueAsString());
+								if( null != wi.getField("memberdescription") && null != wi.getField("memberdescription").getValueAsString() )
+								{
+									description = fixDescription(wi.getField("memberdescription").getValueAsString());
+								}
 							}
+							catch( NoSuchElementException e ) 
+							{
+								// Ignore exception
+								Logger.warn("Cannot obtain the value for 'memberdescription' in API response for member: "+ memberName);
+								Logger.info("API Response has the following fields available: ");
+								for( @SuppressWarnings("unchecked")
+								final Iterator<Field> fieldsIterator = wi.getFields(); fieldsIterator.hasNext(); )
+								{
+									Field apiField = fieldsIterator.next();
+									Logger.info("Name: " + apiField.getName() + ", Value: "+ apiField.getValueAsString());
+								}
+							}
+							insert.clearParameters();
+							insert.setShort(1, (short)0);																	// Type
+							insert.setString(2, memberName);																// Name
+							insert.setString(3, wi.getId());																// MemberID
+							insert.setTimestamp(4, new Timestamp(wi.getField("membertimestamp").getDateTime().getTime()));	// Timestamp
+							insert.setClob(5, new StringReader(description));												// Description
+							insert.setString(6, pjConfigHash.get(parentProject));											// ConfigPath
+							insert.setString(7, wi.getField("memberrev").getItem().getId());								// Revision 
+							insert.setString(8, memberName.substring(projectRoot.length()));								// RelativeFile (for workspace)
+							insert.executeUpdate();
 						}
-						catch( NoSuchElementException e ) 
+						else
 						{
-							// Ignore exception
-							Logger.warn("Cannot obtain the value for 'memberdescription' in API response for member: "+ memberName);
-							Logger.info("API Response has the following fields available: ");
-							for( @SuppressWarnings("unchecked")
-							final Iterator<Field> fieldsIterator = wi.getFields(); fieldsIterator.hasNext(); )
-							{
-								Field apiField = fieldsIterator.next();
-								Logger.info("Name: " + apiField.getName() + ", Value: "+ apiField.getValueAsString());
-							}
+							// Issue warning...
+							Logger.warn("Skipping " + memberName + " it doesn't appear to exist within this project " + projectRoot + "!");
 						}
-						insert.clearParameters();
-						insert.setShort(1, (short)0);																	// Type
-						insert.setString(2, memberName);																// Name
-						insert.setString(3, wi.getId());																// MemberID
-						insert.setTimestamp(4, new Timestamp(wi.getField("membertimestamp").getDateTime().getTime()));	// Timestamp
-						insert.setClob(5, new StringReader(description));												// Description
-						insert.setString(6, pjConfigHash.get(parentProject));											// ConfigPath
-						insert.setString(7, wi.getField("memberrev").getItem().getId());								// Revision
-						insert.setString(8, memberName.substring(projectRoot.length()));								// RelativeFile
-						insert.executeUpdate();
 					}
 				}
 				else
@@ -660,7 +673,6 @@ public class IntegrityCMProject implements Serializable
 		return projectMembersList;
 	}
 	
-	
 	/**
 	 * Project access function that returns the state of the current project
 	 * NOTE: For maximum efficiency, this should be called only once and after the compareBasline() has been invoked!
@@ -697,8 +709,6 @@ public class IntegrityCMProject implements Serializable
 		
 		return subprojectsList;
 	}
-	
-	
 	
 	/**
 	 * Attempts to fix known issues with characters that can potentially break the change log xml
@@ -884,7 +894,6 @@ public class IntegrityCMProject implements Serializable
 		return api.runCommand(siCheckpoint);
 	}
 	
-	
 	/**
 	 * Applies a Project Label on this Integrity CM Project
 	 * @param api Authenticated Integrity API Session
@@ -1028,22 +1037,21 @@ public class IntegrityCMProject implements Serializable
 		return lastCheckpoint;
 	}
 
-	/** Sets if the project is checkpointed before the build (configuration parameter)
-	 * 
+	/** 
+	 * Sets if the project is checkpointed before the build (configuration parameter) 
 	 * @param checkpointBeforeBuild
 	 */
-	public void setCheckpointBeforeBuild(boolean checkpointBeforeBuild) {
-
-		this.checkpointBeforeBuild = checkpointBeforeBuild;
-		
+	public void setCheckpointBeforeBuild(boolean checkpointBeforeBuild) 
+	{
+		this.checkpointBeforeBuild = checkpointBeforeBuild;	
 	}
 	
-	/** Returns if the project is checkpointed before the build (configuration parameter)
-	 * 
+	/** 
+	 * Returns if the project is checkpointed before the build (configuration parameter) 
 	 * @return
 	 */
-	public boolean getCheckpointBeforeBuild() {
-		
+	public boolean getCheckpointBeforeBuild() 
+	{
 		return checkpointBeforeBuild;
 	}
 }
