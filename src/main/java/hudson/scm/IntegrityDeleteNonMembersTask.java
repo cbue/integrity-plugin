@@ -82,35 +82,41 @@ public class IntegrityDeleteNonMembersTask implements FileCallable<Boolean>
      */
     public void deleteNonMembers(AbstractBuild<?, ?> build,BuildListener listener) throws SQLException, IOException, InterruptedException
     {
-        List<Hashtable<CM_PROJECT, Object>> projectMembersList = siProject.viewProject();
-        FilePath workspace = build.getWorkspace();
-        
-        if( null != alternateWorkspaceDir && alternateWorkspaceDir.length() > 0 )
-        {
-            workspace = new FilePath(new File(alternateWorkspaceDir));
-        }
-    
-        // Get all Integrity project members of the current build
-        List<FilePath> projectMembers = new ArrayList<FilePath>();
-        for (Hashtable<CM_PROJECT, Object> memberInfo : projectMembersList)
-        {
-            File targetFile = new File(workspace + memberInfo.get(CM_PROJECT.RELATIVE_FILE).toString());
-            Logger.debug("Project Member: " + targetFile.getAbsolutePath());
-            projectMembers.add(new FilePath(targetFile));
-        }
-        
-        // Get all Integrity projects of the current build
-        List<String> folderList = siProject.getDirList();
-        for( String folder:folderList )
-        {
-            File targetFile = new File(workspace + folder);
-            Logger.debug("Project Folder: " + targetFile.getAbsolutePath());
-            projectMembers.add(new FilePath(targetFile));
-        }
-        
-        // Delete all members and folders that are not part of the Integrity project
-        deleteNonMembers(workspace, projectMembers, listener);
+    	try {
 
+    		List<Hashtable<CM_PROJECT, Object>> projectMembersList = siProject.viewProject();
+	        FilePath workspace = build.getWorkspace();
+	        
+	        if( null != alternateWorkspaceDir && alternateWorkspaceDir.length() > 0 )
+	        {
+	            workspace = new FilePath(new File(alternateWorkspaceDir));
+	        }
+	    
+	        // Get all Integrity project members of the current build
+	        List<FilePath> projectMembers = new ArrayList<FilePath>();
+	        for (Hashtable<CM_PROJECT, Object> memberInfo : projectMembersList)
+	        {
+	            File targetFile = new File(workspace + memberInfo.get(CM_PROJECT.RELATIVE_FILE).toString());
+	            Logger.debug("Project Member: " + targetFile.getAbsolutePath());
+	            projectMembers.add(new FilePath(targetFile));
+	        }
+	        
+	        // Get all Integrity projects of the current build
+	        List<String> folderList = siProject.getDirList();
+	        for( String folder:folderList )
+	        {
+	            File targetFile = new File(workspace + folder);
+	            Logger.debug("Project Folder: " + targetFile.getAbsolutePath());
+	            projectMembers.add(new FilePath(targetFile));
+	        }
+	        
+	        // Delete all members and folders that are not part of the Integrity project
+	        deleteNonMembers(workspace, projectMembers, listener);
+        
+	    } finally {
+			siProject.closeProjectDB();
+		} 
+        
     }
     
     /**

@@ -210,14 +210,18 @@ public class IntegrityCheckpointAction extends Notifier implements IntegrityConf
     					// Attach label to 'main' project
     					applyProjectLabel(api, listener, siProject, siProject.getConfigurationPath(), siProject.getProjectName(), siProject.getProjectRevision(), chkptLabel);
     					
-    					// Attach label to 'subProjects'
-    					for (Hashtable<CM_PROJECT, Object> memberInfo: siProject.viewSubProjects()) 
-    					{
-    						String fullConfigPath = String.class.cast(memberInfo.get(CM_PROJECT.CONFIG_PATH));
-    						String projectName = String.class.cast(memberInfo.get(CM_PROJECT.NAME));
-    						String revision = String.class.cast(memberInfo.get(CM_PROJECT.REVISION));
-   							applyProjectLabel(api, listener, siProject, fullConfigPath, projectName, revision, chkptLabel);
-    					}
+    					try {
+    						// Attach label to 'subProjects'
+	    					for (Hashtable<CM_PROJECT, Object> memberInfo: siProject.viewSubProjects()) 
+	    					{
+	    						String fullConfigPath = String.class.cast(memberInfo.get(CM_PROJECT.CONFIG_PATH));
+	    						String projectName = String.class.cast(memberInfo.get(CM_PROJECT.NAME));
+	    						String revision = String.class.cast(memberInfo.get(CM_PROJECT.REVISION));
+	   							applyProjectLabel(api, listener, siProject, fullConfigPath, projectName, revision, chkptLabel);
+	    					}
+    					} finally {
+   							siProject.closeProjectDB();
+    					} 
     				}
     				else
     				{
