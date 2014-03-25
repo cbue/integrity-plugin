@@ -154,7 +154,7 @@ public class DerbyUtils
 		{
 			if(sqle.getErrorCode() == 45000 && sqle.getSQLState().equals("08006"))
 			{
-				Logger.error("Database shutdown successful!");
+				Logger.debug("Database shutdown successful!");
 			}
 			else
 			{
